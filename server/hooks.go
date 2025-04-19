@@ -6,7 +6,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/yeah2014/mcp-go/mcp"
 )
 
 // OnRegisterSessionHookFunc is a hook that will be called when a new session is registered.
