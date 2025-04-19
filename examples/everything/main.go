@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -28,10 +29,31 @@ const (
 	COMPLEX PromptName = "complex_prompt"
 )
 
+type tokenKey struct {
+}
+
+func withToken(ctx context.Context, token string) context.Context {
+	return context.WithValue(ctx, tokenKey{}, token)
+}
+
+func getTokenFromContext(ctx context.Context) string {
+	if token, ok := ctx.Value(tokenKey{}).(string); ok {
+		return token
+	}
+	return ""
+}
+
 func NewMCPServer() *server.MCPServer {
 
 	hooks := &server.Hooks{}
 
+	hooks.AddOnRegisterSessionV2(func(ctx context.Context, session server.ClientSession, r *http.Request) {
+		// 从 URL 查询参数中获取 token
+		token := r.URL.Query().Get("token")
+		fmt.Printf("Received token: %s, sessionId:%s\n", token, session.SessionID())
+		session.Store("token", token)
+		//fmt.Printf("onRegisterSessionV2: %+v\n", session)
+	})
 	hooks.AddBeforeAny(func(ctx context.Context, id any, method mcp.MCPMethod, message any) {
 		fmt.Printf("beforeAny: %s, %v, %v\n", method, id, message)
 	})
@@ -51,7 +73,9 @@ func NewMCPServer() *server.MCPServer {
 		fmt.Printf("afterCallTool: %v, %v, %v\n", id, message, result)
 	})
 	hooks.AddBeforeCallTool(func(ctx context.Context, id any, message *mcp.CallToolRequest) {
-		fmt.Printf("beforeCallTool: %v, %v\n", id, message)
+		token, _ := server.ClientSessionFromContext(ctx).Load("token")
+		fmt.Printf("beforeCallTool: %v, %v, %+v\n", id, message, token)
+		ctx = withToken(ctx, token.(string))
 	})
 
 	mcpServer := server.NewMCPServer(

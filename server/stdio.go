@@ -71,6 +71,13 @@ func (s *stdioSession) Initialized() bool {
 	return s.initialized.Load()
 }
 
+func (s *stdioSession) Store(key string, value interface{}) {
+}
+
+func (s *stdioSession) Load(key string) (interface{}, bool) {
+	return nil, false
+}
+
 var _ ClientSession = (*stdioSession)(nil)
 
 var stdioSessionInstance = stdioSession{

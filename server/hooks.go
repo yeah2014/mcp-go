@@ -4,12 +4,16 @@ package server
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
 // OnRegisterSessionHookFunc is a hook that will be called when a new session is registered.
 type OnRegisterSessionHookFunc func(ctx context.Context, session ClientSession)
+
+// OnRegisterSessionHookFuncV2 is a hook that will be called when a new session is registered.
+type OnRegisterSessionHookFuncV2 func(ctx context.Context, session ClientSession, r *http.Request)
 
 // BeforeAnyHookFunc is a function that is called after the request is
 // parsed but before the method is called.
@@ -83,6 +87,7 @@ type OnAfterCallToolFunc func(ctx context.Context, id any, message *mcp.CallTool
 
 type Hooks struct {
 	OnRegisterSession             []OnRegisterSessionHookFunc
+	OnRegisterSessionV2           []OnRegisterSessionHookFuncV2
 	OnBeforeAny                   []BeforeAnyHookFunc
 	OnSuccess                     []OnSuccessHookFunc
 	OnError                       []OnErrorHookFunc
@@ -208,6 +213,10 @@ func (c *Hooks) AddOnRegisterSession(hook OnRegisterSessionHookFunc) {
 	c.OnRegisterSession = append(c.OnRegisterSession, hook)
 }
 
+func (c *Hooks) AddOnRegisterSessionV2(hook OnRegisterSessionHookFuncV2) {
+	c.OnRegisterSessionV2 = append(c.OnRegisterSessionV2, hook)
+}
+
 func (c *Hooks) RegisterSession(ctx context.Context, session ClientSession) {
 	if c == nil {
 		return
@@ -216,6 +225,16 @@ func (c *Hooks) RegisterSession(ctx context.Context, session ClientSession) {
 		hook(ctx, session)
 	}
 }
+
+func (c *Hooks) RegisterSessionV2(ctx context.Context, session ClientSession, r *http.Request) {
+	if c == nil {
+		return
+	}
+	for _, hook := range c.OnRegisterSessionV2 {
+		hook(ctx, session, r)
+	}
+}
+
 func (c *Hooks) AddBeforeInitialize(hook OnBeforeInitializeFunc) {
 	c.OnBeforeInitialize = append(c.OnBeforeInitialize, hook)
 }

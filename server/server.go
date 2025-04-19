@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"reflect"
 	"sort"
 	"sync"
@@ -60,6 +61,10 @@ type ClientSession interface {
 	NotificationChannel() chan<- mcp.JSONRPCNotification
 	// SessionID is a unique identifier used to track user session.
 	SessionID() string
+	// Store 存储自定义数据
+	Store(key string, value interface{})
+	// Load 获取自定义数据
+	Load(key string) (interface{}, bool)
 }
 
 // clientSessionKey is the context key for storing current client notification channel.
@@ -201,6 +206,21 @@ func (s *MCPServer) RegisterSession(
 		return fmt.Errorf("session %s is already registered", sessionID)
 	}
 	s.hooks.RegisterSession(ctx, session)
+	return nil
+}
+
+// RegisterSessionV2 saves session that should be notified in case if some server attributes changed.
+func (s *MCPServer) RegisterSessionV2(
+	ctx context.Context,
+	session ClientSession,
+	r *http.Request,
+) error {
+	sessionID := session.SessionID()
+	if _, exists := s.sessions.LoadOrStore(sessionID, session); exists {
+		return fmt.Errorf("session %s is already registered", sessionID)
+	}
+	s.hooks.RegisterSession(ctx, session)
+	s.hooks.RegisterSessionV2(ctx, session, r)
 	return nil
 }
 

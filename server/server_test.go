@@ -1193,6 +1193,13 @@ func (f fakeSession) Initialized() bool {
 	return f.initialized
 }
 
+func (s *fakeSession) Store(key string, value interface{}) {
+}
+
+func (s *fakeSession) Load(key string) (interface{}, bool) {
+	return nil, false
+}
+
 var _ ClientSession = fakeSession{}
 
 func TestMCPServer_WithHooks(t *testing.T) {
